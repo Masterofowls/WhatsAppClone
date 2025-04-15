@@ -7,6 +7,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { insertChatSchema, insertMessageSchema, insertChatMemberSchema } from "@shared/schema";
+import { adminConfirmUser, getUserByEmail } from "./supabase-admin";
 
 // Configure multer for file uploads
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -32,6 +33,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Set up static file serving for uploads
   app.use("/uploads", express.static(uploadsDir));
+  
+  // Development-only route for auto-confirming Supabase users
+  app.post("/api/dev/confirm-user", async (req, res) => {
+    // Only available in development environment
+    if (process.env.NODE_ENV !== 'development') {
+      return res.status(403).json({ error: "Only available in development mode" });
+    }
+    
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: "Email is required" });
+    }
+    
+    try {
+      // First get the user ID by email
+      const { success: userSuccess, user, error: userError } = await getUserByEmail(email);
+      
+      if (!userSuccess || !user) {
+        return res.status(404).json({ error: "User not found", details: userError });
+      }
+      
+      // Then confirm the user
+      const { success, error } = await adminConfirmUser(user.id);
+      
+      if (!success) {
+        return res.status(500).json({ error: "Failed to confirm user", details: error });
+      }
+      
+      res.json({ success: true, message: `User ${email} confirmed successfully` });
+    } catch (error) {
+      console.error("Error in confirm-user:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 
   // Users endpoints
   app.get("/api/users", async (req, res) => {
@@ -118,8 +154,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       res.status(201).json(chat);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || 'An error occurred' });
     }
   });
 
@@ -140,8 +176,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const member = await storage.addChatMember(memberData);
       res.status(201).json(member);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || 'An error occurred' });
     }
   });
 
@@ -177,8 +213,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const message = await storage.createMessage(messageData);
       res.status(201).json(message);
-    } catch (error) {
-      res.status(400).json({ error: error.message });
+    } catch (error: any) {
+      res.status(400).json({ error: error.message || 'An error occurred' });
     }
   });
 

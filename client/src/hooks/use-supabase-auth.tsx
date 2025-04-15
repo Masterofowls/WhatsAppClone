@@ -82,8 +82,26 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
         variant: 'destructive',
       });
     } else {
-      // Auto sign-in for development
+      // In development, we'll auto-confirm and auto-login users
       if (import.meta.env.DEV) {
+        try {
+          // First try to auto-confirm the user on the server
+          const confirmRes = await fetch('/api/dev/confirm-user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+          });
+          
+          if (confirmRes.ok) {
+            console.log('User auto-confirmed successfully');
+          } else {
+            console.warn('Could not auto-confirm user:', await confirmRes.text());
+          }
+        } catch (confirmError) {
+          console.error('Error auto-confirming user:', confirmError);
+        }
+        
+        // Then try to sign in
         await signIn(email, password);
         toast({
           title: 'Sign up and sign in successful',
