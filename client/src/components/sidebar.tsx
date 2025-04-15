@@ -198,46 +198,104 @@ export default function Sidebar({ chats, onSelectChat, onShowProfile, isMobileVi
   // Chat list renderer
   const ChatList = () => (
     <>
-      {filteredChats.map((chat) => (
+      {filteredChats.map((chat, index) => (
         <motion.div
           key={chat.id}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.2 }}
-          className="flex items-center px-3 py-3 hover:bg-[#F5F6F6] cursor-pointer border-b border-[#E9EDEF]"
+          initial={{ opacity: 0, y: 10, scale: 0.97 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ 
+            duration: 0.3, 
+            delay: index * 0.05, 
+            type: "spring",
+            stiffness: 500,
+            damping: 30
+          }}
+          whileHover={{ 
+            scale: 1.01, 
+            backgroundColor: "#F5F6F6",
+            transition: { duration: 0.2 } 
+          }}
+          className="flex items-center px-4 py-3.5 rounded-xl mx-2 my-1 cursor-pointer border-b border-[#E9EDEF] transition-all duration-200"
           onClick={() => onSelectChat(chat)}
         >
-          <div className="relative h-12 w-12 mr-3 flex-shrink-0">
-            <Avatar className="h-12 w-12">
+          <motion.div 
+            className="relative h-12 w-12 mr-4 flex-shrink-0"
+            whileHover={{ scale: 1.05 }}
+            transition={{ duration: 0.2 }}
+          >
+            <Avatar className="h-12 w-12 border-2 border-transparent shadow-sm">
               {getAvatarForChat(chat)}
             </Avatar>
             {chat.members?.find(m => m.id !== user?.id && m.isOnline) && (
-              <div className="absolute bottom-0 right-0 h-3 w-3 bg-[#25D366] rounded-full"></div>
+              <motion.div 
+                className="absolute bottom-0 right-0 h-3.5 w-3.5 bg-[#25D366] rounded-full border-2 border-white"
+                initial={{ scale: 0 }}
+                animate={{ scale: 1 }}
+                transition={{ 
+                  delay: index * 0.05 + 0.2,
+                  type: "spring"
+                }}
+              />
             )}
-          </div>
+          </motion.div>
           
           <div className="flex-1 min-w-0">
             <div className="flex justify-between items-center mb-1">
-              <h3 className="text-[#111B21] font-medium text-base truncate">
+              <motion.h3 
+                className="text-[#111B21] font-medium text-base truncate"
+                initial={{ opacity: 0, x: -5 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 + 0.1, duration: 0.3 }}
+              >
                 {getChatName(chat)}
-              </h3>
-              <span className={`text-xs ${chat.unreadCount > 0 ? 'text-[#25D366]' : 'text-[#8696A0]'}`}>
+              </motion.h3>
+              <motion.span 
+                className={`text-xs font-medium px-1.5 py-0.5 rounded-full ${
+                  chat.unreadCount > 0 
+                    ? 'text-[#25D366] bg-[#e7f8ee]' 
+                    : 'text-[#8696A0]'
+                }`}
+                initial={{ opacity: 0, x: 5 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 + 0.1, duration: 0.3 }}
+              >
                 {formatChatTime(chat)}
-              </span>
+              </motion.span>
             </div>
             
             <div className="flex items-center">
-              <div className="flex-1 text-sm text-[#8696A0] truncate">
+              <motion.div 
+                className="flex-1 text-sm text-[#8696A0] truncate"
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.05 + 0.2, duration: 0.3 }}
+              >
                 {getMessageStatusIcon(chat) && (
-                  <span className="mr-1">{getMessageStatusIcon(chat)}</span>
+                  <motion.span 
+                    className="mr-1"
+                    whileHover={{ scale: 1.2 }}
+                  >
+                    {getMessageStatusIcon(chat)}
+                  </motion.span>
                 )}
                 {getLastMessagePreview(chat)}
-              </div>
+              </motion.div>
               
               {chat.unreadCount > 0 && (
-                <div className="bg-[#25D366] text-white rounded-full h-5 w-5 flex items-center justify-center text-xs ml-1">
+                <motion.div 
+                  className="bg-[#25D366] text-white rounded-full h-5 w-5 flex items-center justify-center text-xs ml-1.5 shadow-sm"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ 
+                    type: "spring",
+                    stiffness: 500,
+                    damping: 30,
+                    delay: index * 0.05 + 0.3
+                  }}
+                >
                   {chat.unreadCount}
-                </div>
+                </motion.div>
               )}
             </div>
           </div>
@@ -313,71 +371,167 @@ export default function Sidebar({ chats, onSelectChat, onShowProfile, isMobileVi
   return (
     <div className="w-full md:w-96 flex-shrink-0 bg-[#FFFFFF] border-r border-[#E9EDEF] flex flex-col h-full">
       {/* Profile header */}
-      <div className="flex items-center justify-between bg-[#F0F2F5] p-3 h-16">
-        <Button 
-          variant="ghost" 
-          className="p-0 h-10 w-10 rounded-full"
-          onClick={onShowProfile}
-        >
-          <Avatar className="h-10 w-10">
-            {user?.profileImage ? (
-              <AvatarImage src={user.profileImage} alt={user.displayName} />
-            ) : (
-              <AvatarFallback>{user?.displayName.substring(0, 2) || 'U'}</AvatarFallback>
-            )}
-          </Avatar>
-        </Button>
+      <motion.div 
+        className="flex items-center justify-between bg-[#F0F2F5] p-3 h-16"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, type: "spring" }}
+      >
+        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+          <Button 
+            variant="ghost" 
+            className="p-0 h-10 w-10 rounded-full hover:bg-[#e5e7eb] overflow-hidden"
+            onClick={onShowProfile}
+          >
+            <Avatar className="h-10 w-10 border-2 border-transparent hover:border-[#25D366] transition-all duration-200">
+              {user?.profileImage ? (
+                <AvatarImage src={user.profileImage} alt={user.displayName} />
+              ) : (
+                <AvatarFallback className="bg-[#25D366] text-white">{user?.displayName.substring(0, 2) || 'U'}</AvatarFallback>
+              )}
+            </Avatar>
+          </Button>
+        </motion.div>
         
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" className="text-[#8696A0] hover:text-[#111B21] hover:bg-[#F5F6F6]">
-            <Users className="h-5 w-5" />
-          </Button>
+        <motion.div 
+          className="flex items-center gap-3"
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.3, delay: 0.1 }}
+        >
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-[#8696A0] hover:text-[#111B21] hover:bg-[#F5F6F6] rounded-full"
+            >
+              <Users className="h-5 w-5" />
+            </Button>
+          </motion.div>
           
-          <Button variant="ghost" size="icon" className="text-[#8696A0] hover:text-[#111B21] hover:bg-[#F5F6F6]">
-            <Circle className="h-5 w-5" />
-          </Button>
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-[#8696A0] hover:text-[#111B21] hover:bg-[#F5F6F6] rounded-full"
+            >
+              <Circle className="h-5 w-5" />
+            </Button>
+          </motion.div>
           
-          <Button variant="ghost" size="icon" className="text-[#8696A0] hover:text-[#111B21] hover:bg-[#F5F6F6]">
-            <MessageCircle className="h-5 w-5" />
-          </Button>
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-[#8696A0] hover:text-[#111B21] hover:bg-[#F5F6F6] rounded-full"
+            >
+              <MessageCircle className="h-5 w-5" />
+            </Button>
+          </motion.div>
           
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-[#8696A0] hover:text-[#111B21] hover:bg-[#F5F6F6]">
-                <MoreVertical className="h-5 w-5" />
-              </Button>
+              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-[#8696A0] hover:text-[#111B21] hover:bg-[#F5F6F6] rounded-full"
+                >
+                  <MoreVertical className="h-5 w-5" />
+                </Button>
+              </motion.div>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={onShowProfile}>Profile</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setShowNewChatDialog(true)}>New chat</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => logoutMutation.mutate()}>Log out</DropdownMenuItem>
+            <DropdownMenuContent align="end" className="rounded-xl shadow-lg border border-gray-100">
+              <DropdownMenuItem 
+                onClick={onShowProfile}
+                className="rounded-md hover:bg-gray-50 focus:bg-gray-50"
+              >
+                Profile
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => setShowNewChatDialog(true)}
+                className="rounded-md hover:bg-gray-50 focus:bg-gray-50"
+              >
+                New chat
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => logoutMutation.mutate()}
+                className="rounded-md hover:bg-gray-50 focus:bg-gray-50 text-red-500"
+              >
+                Log out
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
       
       {/* Search bar */}
-      <div className="p-2 bg-[#FFFFFF]">
-        <div className="relative">
+      <motion.div 
+        className="p-2 bg-[#FFFFFF]"
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >
+        <motion.div 
+          className="relative"
+          whileHover={{ scale: 1.01 }}
+          transition={{ duration: 0.2 }}
+        >
           <Input 
             placeholder="Search or start new chat" 
-            className="w-full py-2 px-10 bg-[#F0F2F5] rounded-lg text-[#111B21] border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="w-full py-2.5 px-10 bg-[#F0F2F5] rounded-xl text-[#111B21] border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-sm hover:shadow-md transition-all duration-200"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-          <Search className="h-5 w-5 absolute left-3 top-2.5 text-[#8696A0]" />
-          <Filter className="h-5 w-5 absolute right-3 top-2.5 text-[#8696A0]" />
-        </div>
-      </div>
+          <motion.span 
+            className="absolute left-3 top-2.5 text-[#8696A0]"
+            whileHover={{ scale: 1.1, color: "#25D366" }}
+          >
+            <Search className="h-5 w-5" />
+          </motion.span>
+          <motion.span 
+            className="absolute right-3 top-2.5 text-[#8696A0]"
+            whileHover={{ scale: 1.1, color: "#25D366" }}
+          >
+            <Filter className="h-5 w-5" />
+          </motion.span>
+        </motion.div>
+      </motion.div>
       
       {/* New chat button for mobile */}
       {isMobileView && (
-        <Button 
-          className="fixed right-4 bottom-4 bg-[#25D366] hover:bg-[#1da951] text-white rounded-full h-14 w-14 shadow-lg z-10"
-          onClick={() => setShowNewChatDialog(true)}
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ 
+            type: "spring",
+            stiffness: 500,
+            damping: 30,
+            delay: 0.5
+          }}
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          className="fixed right-4 bottom-4 z-10"
         >
-          <MessageCircle className="h-6 w-6" />
-        </Button>
+          <Button 
+            className="bg-[#25D366] hover:bg-[#1da951] text-white rounded-full h-14 w-14 shadow-lg overflow-hidden"
+            onClick={() => setShowNewChatDialog(true)}
+          >
+            <motion.div
+              animate={{ 
+                rotate: [0, 10, -10, 0],
+              }}
+              transition={{ 
+                duration: 1.5, 
+                repeat: Infinity,
+                repeatDelay: 3
+              }}
+            >
+              <Plus className="h-7 w-7 absolute opacity-0 animate-ping" />
+              <MessageCircle className="h-6 w-6" />
+            </motion.div>
+          </Button>
+        </motion.div>
       )}
       
       {/* Chat list with transitions */}
@@ -405,86 +559,174 @@ export default function Sidebar({ chats, onSelectChat, onShowProfile, isMobileVi
       
       {/* New chat dialog */}
       <Dialog open={showNewChatDialog} onOpenChange={setShowNewChatDialog}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{isGroupChat ? 'New Group' : 'New Chat'}</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="sm:max-w-md rounded-xl overflow-hidden border-0 shadow-lg">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <DialogHeader className="pb-2">
+              <DialogTitle className="text-xl font-semibold text-[#111B21]">
+                {isGroupChat ? 'Create New Group' : 'Start New Chat'}
+              </DialogTitle>
+            </DialogHeader>
+          </motion.div>
           
           <div className="space-y-4 py-4">
-            <div className="flex gap-2">
-              <Button 
-                variant={isGroupChat ? "outline" : "default"} 
-                className={!isGroupChat ? "bg-[#25D366] hover:bg-[#1da951]" : ""}
-                onClick={() => setIsGroupChat(false)}
-              >
-                Private Chat
-              </Button>
-              <Button 
-                variant={!isGroupChat ? "outline" : "default"} 
-                className={isGroupChat ? "bg-[#25D366] hover:bg-[#1da951]" : ""}
-                onClick={() => setIsGroupChat(true)}
-              >
-                Group Chat
-              </Button>
-            </div>
+            <motion.div 
+              className="flex gap-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.1 }}
+            >
+              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                <Button 
+                  variant={isGroupChat ? "outline" : "default"} 
+                  className={`rounded-xl px-5 py-2 ${!isGroupChat ? "bg-[#25D366] hover:bg-[#1da951]" : ""}`}
+                  onClick={() => setIsGroupChat(false)}
+                >
+                  <UserPlus className="mr-2 h-4 w-4" />
+                  Private Chat
+                </Button>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
+                <Button 
+                  variant={!isGroupChat ? "outline" : "default"} 
+                  className={`rounded-xl px-5 py-2 ${isGroupChat ? "bg-[#25D366] hover:bg-[#1da951]" : ""}`}
+                  onClick={() => setIsGroupChat(true)}
+                >
+                  <Users className="mr-2 h-4 w-4" />
+                  Group Chat
+                </Button>
+              </motion.div>
+            </motion.div>
             
             {isGroupChat && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Group Name</label>
+              <motion.div 
+                className="space-y-2"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                transition={{ duration: 0.3 }}
+              >
+                <label className="text-sm font-medium text-[#111B21]">Group Name</label>
                 <Input 
                   value={newChatName} 
                   onChange={(e) => setNewChatName(e.target.value)} 
                   placeholder="Enter group name"
+                  className="rounded-xl border-gray-200 focus-visible:ring-[#25D366] focus-visible:ring-offset-1"
                 />
-              </div>
+              </motion.div>
             )}
             
-            <div className="space-y-2">
-              <label className="text-sm font-medium">Select {isGroupChat ? 'Members' : 'Contact'}</label>
-              <div className="max-h-60 overflow-y-auto border rounded-md p-1">
-                {users.map(u => (
-                  <div 
+            <motion.div 
+              className="space-y-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.2 }}
+            >
+              <label className="text-sm font-medium text-[#111B21]">
+                Select {isGroupChat ? 'Members' : 'Contact'}
+              </label>
+              <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-xl p-2">
+                {users.map((u, index) => (
+                  <motion.div 
                     key={u.id} 
-                    className={`flex items-center p-2 rounded-md cursor-pointer ${
-                      selectedUsers.includes(u.id) ? 'bg-[#F0F2F5]' : 'hover:bg-[#F5F6F6]'
+                    className={`flex items-center p-3 rounded-xl cursor-pointer transition-all duration-200 ${
+                      selectedUsers.includes(u.id) 
+                        ? 'bg-[#e7f8ee] border border-[#25D366]' 
+                        : 'hover:bg-[#F5F6F6] border border-transparent'
                     }`}
                     onClick={() => toggleUserSelection(u.id)}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ 
+                      duration: 0.2, 
+                      delay: 0.3 + index * 0.05
+                    }}
+                    whileHover={{ scale: 1.01, x: 2 }}
                   >
-                    <Avatar className="h-8 w-8 mr-3">
-                      {u.profileImage ? (
-                        <AvatarImage src={u.profileImage} alt={u.displayName} />
-                      ) : (
-                        <AvatarFallback>{u.displayName.substring(0, 2)}</AvatarFallback>
-                      )}
-                    </Avatar>
-                    <span className="text-[#111B21]">{u.displayName}</span>
+                    <motion.div whileHover={{ scale: 1.1 }} className="mr-3">
+                      <Avatar className="h-9 w-9 border-2 border-transparent">
+                        {u.profileImage ? (
+                          <AvatarImage src={u.profileImage} alt={u.displayName} />
+                        ) : (
+                          <AvatarFallback className="bg-[#F0F2F5] text-[#111B21]">
+                            {u.displayName.substring(0, 2)}
+                          </AvatarFallback>
+                        )}
+                      </Avatar>
+                    </motion.div>
+                    <span className="text-[#111B21] font-medium">{u.displayName}</span>
                     
                     {selectedUsers.includes(u.id) && (
-                      <Check className="ml-auto text-[#25D366]" />
+                      <motion.div 
+                        className="ml-auto"
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      >
+                        <Check className="text-[#25D366] h-5 w-5" />
+                      </motion.div>
                     )}
-                  </div>
+                  </motion.div>
                 ))}
                 
                 {users.length === 0 && (
-                  <div className="p-4 text-center text-[#8696A0]">
-                    No users found
-                  </div>
+                  <motion.div 
+                    className="p-6 text-center text-[#8696A0] flex flex-col items-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3, delay: 0.3 }}
+                  >
+                    <Users className="h-10 w-10 mb-2 text-[#8696A0] opacity-50" />
+                    <p>No users found</p>
+                  </motion.div>
                 )}
               </div>
-            </div>
+            </motion.div>
             
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setShowNewChatDialog(false)}>
-                Cancel
-              </Button>
-              <Button 
-                className="bg-[#25D366] hover:bg-[#1da951]"
-                onClick={handleCreateChat}
-                disabled={createChatMutation.isPending || selectedUsers.length === 0 || (isGroupChat && !newChatName)}
+            <motion.div 
+              className="flex justify-end gap-2 pt-2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.3, delay: 0.4 }}
+            >
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowNewChatDialog(false)}
+                  className="rounded-xl border-gray-200"
+                >
+                  Cancel
+                </Button>
+              </motion.div>
+              <motion.div 
+                whileHover={{ scale: 1.05 }} 
+                whileTap={{ scale: 0.95 }}
+                animate={selectedUsers.length > 0 ? { y: [0, -2, 0] } : {}}
+                transition={{ 
+                  y: { repeat: 3, duration: 0.3, repeatDelay: 2 },
+                  type: "spring"
+                }}
               >
-                {createChatMutation.isPending ? 'Creating...' : 'Create Chat'}
-              </Button>
-            </div>
+                <Button 
+                  className="bg-[#25D366] hover:bg-[#1da951] rounded-xl shadow-md"
+                  onClick={handleCreateChat}
+                  disabled={createChatMutation.isPending || selectedUsers.length === 0 || (isGroupChat && !newChatName)}
+                >
+                  {createChatMutation.isPending ? (
+                    <motion.div 
+                      animate={{ rotate: 360 }}
+                      transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                      className="mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"
+                    />
+                  ) : (
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                  )}
+                  {createChatMutation.isPending ? 'Creating...' : 'Create Chat'}
+                </Button>
+              </motion.div>
+            </motion.div>
           </div>
         </DialogContent>
       </Dialog>
