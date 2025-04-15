@@ -5,7 +5,7 @@ import {
   Message, InsertMessage,
   ChatWithLastMessage
 } from "@shared/schema";
-import session from "express-session";
+import * as session from "express-session";
 import createMemoryStore from "memorystore";
 
 const MemoryStore = createMemoryStore(session);
@@ -41,7 +41,7 @@ export interface IStorage {
   addMessageReaction(messageId: number, userId: number, reaction: string): Promise<Message>;
   
   // Session store
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 }
 
 export class MemStorage implements IStorage {
@@ -53,7 +53,7 @@ export class MemStorage implements IStorage {
   private chatIdCounter: number;
   private chatMemberIdCounter: number;
   private messageIdCounter: number;
-  sessionStore: session.SessionStore;
+  sessionStore: session.Store;
 
   constructor() {
     this.users = new Map();
@@ -292,4 +292,7 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Import and use DatabaseStorage
+import { DatabaseStorage } from './database-storage';
+// export const storage = new MemStorage();
+export const storage = new DatabaseStorage();
