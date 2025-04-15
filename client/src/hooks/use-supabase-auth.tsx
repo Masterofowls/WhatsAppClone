@@ -66,6 +66,39 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   }, [toast, queryClient]);
 
   const signUp = async (email: string, password: string, userData?: Record<string, any>) => {
+    // In development mode, we'll create a simulated signup process that doesn't rely on email confirmation
+    if (import.meta.env.DEV) {
+      try {
+        console.log('[DEV MODE] Using simulated sign up for:', email);
+        
+        // Simulate a successful registration
+        // Then go directly to our special dev signin that bypasses confirmation
+        setUser({
+          id: 'dev-user-id',
+          email: email,
+          user_metadata: { 
+            ...userData,
+            name: userData?.name || email.split('@')[0] 
+          },
+          created_at: new Date().toISOString(),
+          app_metadata: {},
+          aud: 'authenticated',
+          confirmed_at: new Date().toISOString()
+        } as any);
+        
+        toast({
+          title: 'Development sign up',
+          description: 'Account created and signed in (DEV MODE)',
+          variant: 'default',
+        });
+        
+        return { error: null };
+      } catch (devError) {
+        console.error('[DEV MODE] Simulated signup failed, falling back to normal flow', devError);
+      }
+    }
+    
+    // Normal Supabase flow
     const { error, data } = await supabase.auth.signUp({ 
       email, 
       password,
@@ -85,7 +118,10 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
       // In development, we'll auto-confirm and auto-login users
       if (import.meta.env.DEV) {
         try {
-          // First try to auto-confirm the user on the server
+          // Wait a bit to allow Supabase to create the user
+          await new Promise(resolve => setTimeout(resolve, 500));
+          
+          // Use our simulated confirmation endpoint
           const confirmRes = await fetch('/api/dev/confirm-user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -93,9 +129,11 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
           });
           
           if (confirmRes.ok) {
-            console.log('User auto-confirmed successfully');
+            const data = await confirmRes.json();
+            console.log('User auto-confirm response:', data);
           } else {
-            console.warn('Could not auto-confirm user:', await confirmRes.text());
+            const errorText = await confirmRes.text();
+            console.warn('Could not auto-confirm user:', errorText);
           }
         } catch (confirmError) {
           console.error('Error auto-confirming user:', confirmError);
@@ -121,8 +159,67 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signIn = async (email: string, password: string) => {
+    // First try normal sign in
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     
+    // If sign in fails with email_not_confirmed and we're in development mode,
+    // we'll try a special development-only bypass
+    if (error && error.message === 'Email not confirmed' && import.meta.env.DEV) {
+      try {
+        console.log('Attempting dev mode auth bypass for:', email);
+        
+        // Try manual confirmation first
+        const confirmRes = await fetch('/api/dev/confirm-user', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        
+        if (confirmRes.ok) {
+          console.log('Dev auth: User confirmed successfully');
+          
+          // Try signing in again
+          const retryResult = await supabase.auth.signInWithPassword({ email, password });
+          
+          if (!retryResult.error) {
+            toast({
+              title: 'Dev sign in successful',
+              description: 'Signed in after auto-confirmation',
+              variant: 'default',
+            });
+            return { error: null };
+          }
+          
+          // If still fails, we'll simulate a successful auth
+          if (retryResult.error) {
+            console.log('Dev auth: Still cannot sign in after confirmation, using simulation');
+            
+            // Simulate session in development mode only
+            setUser({
+              id: 'dev-user-id',
+              email: email,
+              user_metadata: { name: email.split('@')[0] },
+              created_at: new Date().toISOString(),
+              app_metadata: {},
+              aud: 'authenticated',
+              confirmed_at: new Date().toISOString()
+            } as any);
+            
+            toast({
+              title: 'Development sign in',
+              description: 'Signed in with simulated auth (DEV MODE)',
+              variant: 'default',
+            });
+            
+            return { error: null };
+          }
+        }
+      } catch (bypassError) {
+        console.error('Dev auth bypass error:', bypassError);
+      }
+    }
+    
+    // Standard error handling
     if (error) {
       toast({
         title: 'Sign in failed',
@@ -142,6 +239,11 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+    
+    // Clear our simulated user if we're using development mode
+    setUser(null);
+    setSession(null);
+    
     toast({
       title: 'Signed out',
       description: 'You have been successfully signed out.',

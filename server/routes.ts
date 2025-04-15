@@ -7,7 +7,7 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 import { insertChatSchema, insertMessageSchema, insertChatMemberSchema } from "@shared/schema";
-import { adminConfirmUser, getUserByEmail } from "./supabase-admin";
+import { adminConfirmUser, getUserByEmail, devConfirmUser } from "./supabase-admin";
 
 // Configure multer for file uploads
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -48,21 +48,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     
     try {
-      // First get the user ID by email
-      const { success: userSuccess, user, error: userError } = await getUserByEmail(email);
-      
-      if (!userSuccess || !user) {
-        return res.status(404).json({ error: "User not found", details: userError });
-      }
-      
-      // Then confirm the user
-      const { success, error } = await adminConfirmUser(user.id);
+      // In development environment, use the simplified dev function
+      const { success, message, error } = await devConfirmUser(email);
       
       if (!success) {
         return res.status(500).json({ error: "Failed to confirm user", details: error });
       }
       
-      res.json({ success: true, message: `User ${email} confirmed successfully` });
+      res.json({ success: true, message: message || `User ${email} confirmed successfully` });
     } catch (error) {
       console.error("Error in confirm-user:", error);
       res.status(500).json({ error: "Internal server error" });
