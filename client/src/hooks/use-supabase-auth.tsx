@@ -66,11 +66,12 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   }, [toast, queryClient]);
 
   const signUp = async (email: string, password: string, userData?: Record<string, any>) => {
-    const { error } = await supabase.auth.signUp({ 
+    const { error, data } = await supabase.auth.signUp({ 
       email, 
       password,
       options: {
-        data: userData
+        data: userData,
+        emailRedirectTo: window.location.origin,
       }
     });
     
@@ -81,11 +82,21 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
         variant: 'destructive',
       });
     } else {
-      toast({
-        title: 'Sign up successful',
-        description: 'Please check your email to confirm your account.',
-        variant: 'default',
-      });
+      // Auto sign-in for development
+      if (import.meta.env.DEV) {
+        await signIn(email, password);
+        toast({
+          title: 'Sign up and sign in successful',
+          description: 'Your account was created and you are now signed in.',
+          variant: 'default',
+        });
+      } else {
+        toast({
+          title: 'Sign up successful',
+          description: 'Please check your email to confirm your account.',
+          variant: 'default',
+        });
+      }
     }
     
     return { error };

@@ -176,6 +176,8 @@ export default function AuthPage() {
                                 <Input 
                                   className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0" 
                                   placeholder="your.email@example.com" 
+                                  type="email"
+                                  autoComplete="email"
                                   {...field} 
                                 />
                               </div>
@@ -233,6 +235,8 @@ export default function AuthPage() {
                                 <Input 
                                   className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0" 
                                   placeholder="your.email@example.com" 
+                                  type="email"
+                                  autoComplete="email"
                                   {...field} 
                                 />
                               </div>
