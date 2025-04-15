@@ -404,8 +404,10 @@ export default function Sidebar({ chats, onSelectChat, onShowProfile, isMobileVi
               variant="ghost" 
               size="icon" 
               className="text-[#8696A0] hover:text-[#111B21] hover:bg-[#F5F6F6] rounded-full"
+              onClick={() => setShowNewChatDialog(true)}
+              title="New Chat"
             >
-              <Users className="h-5 w-5" />
+              <UserPlus className="h-5 w-5" />
             </Button>
           </motion.div>
           
@@ -414,6 +416,8 @@ export default function Sidebar({ chats, onSelectChat, onShowProfile, isMobileVi
               variant="ghost" 
               size="icon" 
               className="text-[#8696A0] hover:text-[#111B21] hover:bg-[#F5F6F6] rounded-full"
+              onClick={() => setActiveView(activeView === 0 ? 0 : 0)} // Refresh current view
+              title="Status"
             >
               <Circle className="h-5 w-5" />
             </Button>
@@ -424,6 +428,8 @@ export default function Sidebar({ chats, onSelectChat, onShowProfile, isMobileVi
               variant="ghost" 
               size="icon" 
               className="text-[#8696A0] hover:text-[#111B21] hover:bg-[#F5F6F6] rounded-full"
+              onClick={() => setShowNewChatDialog(true)}
+              title="New Chat"
             >
               <MessageCircle className="h-5 w-5" />
             </Button>
@@ -479,9 +485,10 @@ export default function Sidebar({ chats, onSelectChat, onShowProfile, isMobileVi
         >
           <Input 
             placeholder="Search or start new chat" 
-            className="w-full py-2.5 px-10 bg-[#F0F2F5] rounded-xl text-[#111B21] border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-sm hover:shadow-md transition-all duration-200"
+            className="w-full py-2.5 px-10 bg-[#F0F2F5] rounded-xl text-[#111B21] border-0 focus-visible:ring-1 focus-visible:ring-[#25D366] focus-visible:ring-offset-0 shadow-sm hover:shadow-md transition-all duration-200"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
+            onClick={() => !searchTerm && setShowNewChatDialog(true)}
           />
           <motion.span 
             className="absolute left-3 top-2.5 text-[#8696A0]"
@@ -565,8 +572,8 @@ export default function Sidebar({ chats, onSelectChat, onShowProfile, isMobileVi
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <DialogHeader className="pb-2">
-              <DialogTitle className="text-xl font-semibold text-[#111B21]">
+            <DialogHeader className="pb-2 bg-[#25D366] -mt-4 -mx-4 px-6 py-4 rounded-t-lg">
+              <DialogTitle className="text-xl font-semibold text-white">
                 {isGroupChat ? 'Create New Group' : 'Start New Chat'}
               </DialogTitle>
             </DialogHeader>
