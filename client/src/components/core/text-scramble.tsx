@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, FC, ReactNode } from 'react';
+import React, { FC, ReactNode, useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 
 interface TextScrambleProps {
@@ -13,81 +13,74 @@ interface TextScrambleProps {
 export const TextScramble: FC<TextScrambleProps> = ({
   children,
   className,
-  characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789',
-  speed = 40,
+  characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-={}[]|;:,.<>?/',
+  speed = 50,
 }) => {
-  const [output, setOutput] = useState('');
-  const [phase, setPhase] = useState(0);
-  const text = React.Children.toArray(children)
-    .map((child) => {
-      if (typeof child === 'string') return child;
-      if (React.isValidElement(child) && typeof child.props.children === 'string')
-        return child.props.children;
-      return '';
-    })
-    .join('');
+  const [displayText, setDisplayText] = useState('');
+  const [originalText, setOriginalText] = useState('');
+  const [isComplete, setIsComplete] = useState(false);
 
   useEffect(() => {
-    let timeout: NodeJS.Timeout;
-    
-    const next = () => {
-      if (phase === 0) {
-        // Start
-        const newOutput = [];
-        for (let i = 0; i < text.length; i++) {
-          newOutput.push(
-            text.charAt(i) === ' '
-              ? ' '
-              : characters.charAt(Math.floor(Math.random() * characters.length))
-          );
-        }
-        setOutput(newOutput.join(''));
-        setPhase(1);
-      } else if (phase === 1) {
-        // Scramble
-        const newOutput = [];
-        let complete = true;
-        for (let i = 0; i < text.length; i++) {
-          if (text.charAt(i) === output.charAt(i)) {
-            newOutput.push(text.charAt(i));
-          } else {
-            complete = false;
-            newOutput.push(
-              text.charAt(i) === ' '
-                ? ' '
-                : characters.charAt(Math.floor(Math.random() * characters.length))
-            );
-          }
-        }
-        setOutput(newOutput.join(''));
-        if (complete) {
-          setPhase(2);
-        }
-      } else if (phase === 2) {
-        // Reveal
-        let reveal = 0;
-        const newOutput = output.split('');
-        for (let i = 0; i < text.length; i++) {
-          if (output.charAt(i) !== text.charAt(i)) {
-            reveal = i;
-            newOutput[i] = text.charAt(i);
-            break;
-          }
-        }
-        setOutput(newOutput.join(''));
-        if (reveal === 0) {
-          setPhase(3);
+    // Convert to string if it's a React element
+    if (typeof children !== 'string') {
+      const childrenAsString = React.Children.toArray(children)
+        .map((child) => {
+          if (typeof child === 'string') return child;
+          if (typeof child === 'number') return child.toString();
+          return '';
+        })
+        .join('');
+      setOriginalText(childrenAsString);
+      scrambleText(childrenAsString);
+    } else {
+      setOriginalText(children);
+      scrambleText(children);
+    }
+  }, [children]);
+
+  const scrambleText = (text: string) => {
+    let iteration = 0;
+    const maxIterations = text.length * 3;
+    const finalText = text;
+    let scrambled = '';
+
+    // Fill with initial random characters
+    for (let i = 0; i < finalText.length; i++) {
+      scrambled += characters.charAt(Math.floor(Math.random() * characters.length));
+    }
+    setDisplayText(scrambled);
+
+    const interval = setInterval(() => {
+      iteration++;
+      
+      // Gradually reveal the original characters
+      let result = '';
+      for (let i = 0; i < finalText.length; i++) {
+        // If we've completed a character, use the original
+        if (i < iteration / 3) {
+          result += finalText[i];
+        } else {
+          // Otherwise, use a random character
+          result += characters.charAt(Math.floor(Math.random() * characters.length));
         }
       }
-
-      if (phase < 3) {
-        timeout = setTimeout(next, speed);
+      
+      setDisplayText(result);
+      
+      // Stop when we've gone through enough iterations
+      if (iteration >= maxIterations) {
+        clearInterval(interval);
+        setDisplayText(finalText);
+        setIsComplete(true);
       }
-    };
+    }, speed);
 
-    timeout = setTimeout(next, speed);
-    return () => clearTimeout(timeout);
-  }, [phase, output, speed, text, characters]);
+    return () => clearInterval(interval);
+  };
 
-  return <div className={cn(className)}>{output}</div>;
+  return (
+    <span className={cn('inline-block', className, isComplete && 'transition-all duration-500')}>
+      {displayText}
+    </span>
+  );
 };

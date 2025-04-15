@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { ChatWithLastMessage, Message, User } from '@shared/schema';
 import { useAuth } from '@/hooks/use-auth';
 import { useWebSocket } from '@/hooks/use-websocket';
+import { motion } from 'motion/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
@@ -270,24 +271,82 @@ export default function ChatArea({ chat, onBackClick, onContactInfoClick, isMobi
         <div className="flex flex-col space-y-2 max-w-4xl mx-auto">
           {/* Loading state */}
           {isLoading && (
-            <div className="flex justify-center my-4">
-              <div className="bg-white px-4 py-2 rounded-lg text-sm text-[#8696A0]">
-                <TextShimmer className="font-medium" duration={1.5}>
-                  Loading messages...
-                </TextShimmer>
-              </div>
-            </div>
+            <motion.div 
+              className="flex justify-center my-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.3 }}
+            >
+              <motion.div 
+                className="bg-white px-6 py-4 rounded-lg text-sm text-[#8696A0] shadow-sm"
+                animate={{ 
+                  boxShadow: [
+                    "0 1px 3px rgba(0,0,0,0.1)",
+                    "0 3px 6px rgba(0,0,0,0.15)",
+                    "0 1px 3px rgba(0,0,0,0.1)"
+                  ]
+                }}
+                transition={{ 
+                  duration: 1.5, 
+                  repeat: Infinity,
+                  ease: "easeInOut" 
+                }}
+              >
+                <div className="flex items-center space-x-2">
+                  <motion.div
+                    className="w-3 h-3 rounded-full bg-[#25D366]"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: 0 }}
+                  />
+                  <motion.div
+                    className="w-3 h-3 rounded-full bg-[#25D366]"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
+                  />
+                  <motion.div
+                    className="w-3 h-3 rounded-full bg-[#25D366]"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
+                  />
+                  <TextShimmer className="font-medium ml-2" duration={1.5}>
+                    Loading messages...
+                  </TextShimmer>
+                </div>
+              </motion.div>
+            </motion.div>
           )}
           
           {/* Empty state */}
           {!isLoading && Object.keys(groupedMessages).length === 0 && (
-            <div className="flex justify-center my-4">
-              <div className="bg-white px-4 py-2 rounded-lg text-sm">
-                <TextScramble className="text-[#25D366] font-medium">
+            <motion.div 
+              className="flex justify-center my-4"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ 
+                duration: 0.5,
+                type: "spring",
+                stiffness: 120,
+                damping: 20
+              }}
+            >
+              <div className="bg-white px-6 py-4 rounded-lg text-sm shadow-sm">
+                <TextScramble className="text-[#25D366] font-medium text-center block mb-3">
                   No messages yet. Start the conversation!
                 </TextScramble>
+                <motion.div
+                  className="flex justify-center text-3xl"
+                  initial={{ y: 10 }}
+                  animate={{ y: [0, -5, 0] }}
+                  transition={{ 
+                    repeat: Infinity,
+                    duration: 1.5,
+                    ease: "easeInOut"
+                  }}
+                >
+                  💬
+                </motion.div>
               </div>
-            </div>
+            </motion.div>
           )}
           
           {/* Messages grouped by date */}
@@ -303,13 +362,23 @@ export default function ChatArea({ chat, onBackClick, onContactInfoClick, isMobi
               </div>
               
               {/* Messages for this date */}
-              {dateMessages.map((message) => (
-                <MessageItem 
+              {dateMessages.map((message, index) => (
+                <motion.div
                   key={message.id}
-                  message={message}
-                  isOwnMessage={message.senderId === user?.id}
-                  sender={chat.members?.find(m => m.id === message.senderId)}
-                />
+                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ 
+                    duration: 0.35, 
+                    delay: Math.min(index * 0.05, 0.3),
+                    ease: [0.25, 0.1, 0.25, 1.0]
+                  }}
+                >
+                  <MessageItem 
+                    message={message}
+                    isOwnMessage={message.senderId === user?.id}
+                    sender={chat.members?.find(m => m.id === message.senderId)}
+                  />
+                </motion.div>
               ))}
             </div>
           ))}
@@ -318,9 +387,15 @@ export default function ChatArea({ chat, onBackClick, onContactInfoClick, isMobi
           {typingMemberNames.length > 0 && (
             <div className="flex items-end">
               <div className="max-w-[75%] bg-white rounded-lg p-2 shadow-sm">
-                <TextShimmerWave className="font-medium text-sm text-[#25D366]" duration={1}>
-                  {typingMemberNames.join(', ')} {typingMemberNames.length === 1 ? 'is' : 'are'} typing...
-                </TextShimmerWave>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, type: 'spring' }}
+                >
+                  <TextShimmerWave className="font-medium text-sm text-[#25D366]" duration={1}>
+                    {typingMemberNames.join(', ')} {typingMemberNames.length === 1 ? 'is' : 'are'} typing...
+                  </TextShimmerWave>
+                </motion.div>
               </div>
             </div>
           )}

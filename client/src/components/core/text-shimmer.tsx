@@ -1,7 +1,6 @@
 'use client';
 
-import { FC, ReactNode } from 'react';
-import { motion } from 'motion/react';
+import React, { FC, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 
 interface TextShimmerProps {
@@ -16,19 +15,24 @@ export const TextShimmer: FC<TextShimmerProps> = ({
   duration = 2,
 }) => {
   return (
-    <motion.div
-      className={cn('relative overflow-hidden', className)}
-      initial={{ opacity: 0.5 }}
-      animate={{
-        opacity: [0.5, 0.7, 0.5],
-      }}
-      transition={{
-        repeat: Infinity,
-        duration,
-        ease: 'easeInOut',
-      }}
+    <span className={cn(
+      'inline-block relative bg-clip-text text-transparent',
+      'bg-gradient-to-r from-transparent via-current to-transparent',
+      'bg-[length:200%_100%]',
+      className
+    )}
+    style={{
+      animation: `textGradient ${duration}s linear infinite`,
+    }}
     >
-      {children}
-    </motion.div>
+      <span className="invisible">{children}</span>
+      <span className="absolute inset-0">{children}</span>
+      <style jsx>{`
+        @keyframes textGradient {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 200% 50%; }
+        }
+      `}</style>
+    </span>
   );
 };
