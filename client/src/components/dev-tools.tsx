@@ -11,10 +11,8 @@ export function DevTools() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
-  // Only show in development mode
-  if (import.meta.env.PROD) {
-    return null;
-  }
+  // Hide in all environments as requested by user
+  return null;
   
   const handleConfirmUser = async () => {
     if (!email) {
