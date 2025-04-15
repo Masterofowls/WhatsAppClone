@@ -135,6 +135,11 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Profile</DialogTitle>
+          {isDevMode && (
+            <DialogDescription className="text-amber-500 font-medium pt-1">
+              Development Mode - Profile changes will be saved locally
+            </DialogDescription>
+          )}
         </DialogHeader>
 
         <div className="space-y-6 py-4">

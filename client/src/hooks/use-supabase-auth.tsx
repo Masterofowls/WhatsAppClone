@@ -194,11 +194,27 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
           if (retryResult.error) {
             console.log('Dev auth: Still cannot sign in after confirmation, using simulation');
             
+            // Try to load saved profile data from localStorage
+            let savedProfile = {};
+            try {
+              const savedData = localStorage.getItem('dev_user_profile');
+              if (savedData) {
+                savedProfile = JSON.parse(savedData);
+              }
+            } catch (e) {
+              console.error('Failed to load profile from localStorage:', e);
+            }
+            
             // Simulate session in development mode only
             setUser({
               id: 'dev-user-id',
               email: email,
-              user_metadata: { name: email.split('@')[0] },
+              user_metadata: { 
+                name: savedProfile?.name || email.split('@')[0],
+                status: savedProfile?.status || 'Available',
+                profileImage: savedProfile?.profileImage || null,
+                ...savedProfile
+              },
               created_at: new Date().toISOString(),
               app_metadata: {},
               aud: 'authenticated',
@@ -253,15 +269,52 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
 
   const updateProfile = async (data: Record<string, any>) => {
     // If we're using a simulated dev user, just update local state
-    if (user && user.id === 'dev-user-id' && import.meta.env.DEV) {
+    if (user && (user.id === 'dev-user-id' || import.meta.env.DEV)) {
       // Apply updates to simulated user
-      setUser(prevUser => ({
-        ...prevUser,
-        user_metadata: {
-          ...prevUser?.user_metadata,
-          ...data
+      setUser(prevUser => {
+        if (!prevUser) return null;
+        
+        // Create a deep copy to ensure we don't directly modify state
+        const updatedUser = { 
+          ...prevUser,
+          user_metadata: {
+            ...prevUser.user_metadata,
+            ...data
+          }
+        };
+        
+        // For the display name update
+        if (data.name) {
+          updatedUser.user_metadata.name = data.name;
         }
-      } as any));
+        
+        // For status updates
+        if (data.status) {
+          updatedUser.user_metadata.status = data.status;
+        }
+        
+        // For profile image updates
+        if (data.profileImage) {
+          updatedUser.user_metadata.profileImage = data.profileImage;
+        }
+        
+        // Sync to localStorage for persistence in dev mode
+        if (import.meta.env.DEV) {
+          try {
+            localStorage.setItem('dev_user_profile', JSON.stringify(updatedUser.user_metadata));
+          } catch (e) {
+            console.error('Failed to save profile to localStorage:', e);
+          }
+        }
+        
+        return updatedUser as any;
+      });
+      
+      // Wait a moment to ensure state has updated
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Invalidate any related queries to ensure UI updates
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
       
       toast({
         title: 'Profile updated',
@@ -284,6 +337,9 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
         variant: 'destructive',
       });
     } else {
+      // Invalidate any related queries to ensure UI updates
+      queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      
       toast({
         title: 'Profile updated',
         description: 'Your profile has been updated successfully.',
