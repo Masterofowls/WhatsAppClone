@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { User, ChatWithLastMessage } from '@shared/schema';
 import { useAuth } from '@/hooks/use-auth';
 import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
@@ -10,7 +10,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -19,6 +18,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { TransitionPanel } from '@/components/core/transition-panel';
+import { motion } from 'motion/react';
 import { 
   Users, 
   Circle, 
@@ -48,6 +49,7 @@ export default function Sidebar({ chats, onSelectChat, onShowProfile, isMobileVi
   const [newChatName, setNewChatName] = useState('');
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [isGroupChat, setIsGroupChat] = useState(false);
+  const [activeView, setActiveView] = useState(0);
   
   const queryClient = useQueryClient();
   
@@ -56,8 +58,16 @@ export default function Sidebar({ chats, onSelectChat, onShowProfile, isMobileVi
     return chatName.toLowerCase().includes(searchTerm.toLowerCase());
   });
   
+  // Effect to update active view based on search results
+  useEffect(() => {
+    // If search term is empty, show all chats (index 0)
+    // If filtering and results found, show search results (index 0)
+    // If filtering but no results, show empty state (index 1)
+    setActiveView(searchTerm !== '' && filteredChats.length === 0 ? 1 : 0);
+  }, [searchTerm, filteredChats.length]);
+  
   // Users query for new chat dialog
-  const { data: users } = useQuery<User[]>({
+  const { data: users = [] } = useQuery<User[]>({
     queryKey: ['/api/users'],
     enabled: showNewChatDialog,
   });
@@ -185,6 +195,121 @@ export default function Sidebar({ chats, onSelectChat, onShowProfile, isMobileVi
     return format(messageDate, 'MM/dd/yy');
   };
   
+  // Chat list renderer
+  const ChatList = () => (
+    <>
+      {filteredChats.map((chat) => (
+        <motion.div
+          key={chat.id}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2 }}
+          className="flex items-center px-3 py-3 hover:bg-[#F5F6F6] cursor-pointer border-b border-[#E9EDEF]"
+          onClick={() => onSelectChat(chat)}
+        >
+          <div className="relative h-12 w-12 mr-3 flex-shrink-0">
+            <Avatar className="h-12 w-12">
+              {getAvatarForChat(chat)}
+            </Avatar>
+            {chat.members?.find(m => m.id !== user?.id && m.isOnline) && (
+              <div className="absolute bottom-0 right-0 h-3 w-3 bg-[#25D366] rounded-full"></div>
+            )}
+          </div>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-center mb-1">
+              <h3 className="text-[#111B21] font-medium text-base truncate">
+                {getChatName(chat)}
+              </h3>
+              <span className={`text-xs ${chat.unreadCount > 0 ? 'text-[#25D366]' : 'text-[#8696A0]'}`}>
+                {formatChatTime(chat)}
+              </span>
+            </div>
+            
+            <div className="flex items-center">
+              <div className="flex-1 text-sm text-[#8696A0] truncate">
+                {getMessageStatusIcon(chat) && (
+                  <span className="mr-1">{getMessageStatusIcon(chat)}</span>
+                )}
+                {getLastMessagePreview(chat)}
+              </div>
+              
+              {chat.unreadCount > 0 && (
+                <div className="bg-[#25D366] text-white rounded-full h-5 w-5 flex items-center justify-center text-xs ml-1">
+                  {chat.unreadCount}
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      ))}
+    </>
+  );
+  
+  // Empty state component
+  const EmptyState = () => (
+    <div className="flex flex-col items-center justify-center h-full p-4 text-[#8696A0]">
+      <motion.div 
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.3, type: 'spring' }}
+      >
+        <MessageCircle className="h-12 w-12 mb-2 text-[#25D366]" />
+      </motion.div>
+      <motion.p
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        No chats found
+      </motion.p>
+      <motion.div
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >
+        <Button 
+          className="mt-4 bg-[#25D366] hover:bg-[#1da951] text-white"
+          onClick={() => setShowNewChatDialog(true)}
+        >
+          Start a new chat
+        </Button>
+      </motion.div>
+    </div>
+  );
+  
+  // Search empty state
+  const SearchEmptyState = () => (
+    <div className="flex flex-col items-center justify-center h-full p-4 text-[#8696A0]">
+      <motion.div 
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.3, type: 'spring' }}
+      >
+        <Search className="h-12 w-12 mb-2 text-[#25D366]" />
+      </motion.div>
+      <motion.p
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+      >
+        No chats found for "{searchTerm}"
+      </motion.p>
+      <motion.div
+        initial={{ y: 10, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3, delay: 0.2 }}
+      >
+        <Button 
+          className="mt-4 bg-[#25D366] hover:bg-[#1da951] text-white"
+          onClick={() => setSearchTerm('')}
+        >
+          Clear search
+        </Button>
+      </motion.div>
+    </div>
+  );
+  
   return (
     <div className="w-full md:w-96 flex-shrink-0 bg-[#FFFFFF] border-r border-[#E9EDEF] flex flex-col h-full">
       {/* Profile header */}
@@ -255,63 +380,27 @@ export default function Sidebar({ chats, onSelectChat, onShowProfile, isMobileVi
         </Button>
       )}
       
-      {/* Chat list */}
-      <div className="flex-1 overflow-y-auto">
-        {filteredChats.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full p-4 text-[#8696A0]">
-            <MessageCircle className="h-12 w-12 mb-2 text-[#25D366]" />
-            <p>No chats found</p>
-            <Button 
-              className="mt-4 bg-[#25D366] hover:bg-[#1da951] text-white"
-              onClick={() => setShowNewChatDialog(true)}
-            >
-              Start a new chat
-            </Button>
-          </div>
-        ) : (
-          filteredChats.map((chat) => (
-            <div 
-              key={chat.id}
-              className="flex items-center px-3 py-3 hover:bg-[#F5F6F6] cursor-pointer border-b border-[#E9EDEF]"
-              onClick={() => onSelectChat(chat)}
-            >
-              <div className="relative h-12 w-12 mr-3 flex-shrink-0">
-                <Avatar className="h-12 w-12">
-                  {getAvatarForChat(chat)}
-                </Avatar>
-                {chat.members?.find(m => m.id !== user?.id && m.isOnline) && (
-                  <div className="absolute bottom-0 right-0 h-3 w-3 bg-[#25D366] rounded-full"></div>
-                )}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-between items-center mb-1">
-                  <h3 className="text-[#111B21] font-medium text-base truncate">
-                    {getChatName(chat)}
-                  </h3>
-                  <span className={`text-xs ${chat.unreadCount > 0 ? 'text-[#25D366]' : 'text-[#8696A0]'}`}>
-                    {formatChatTime(chat)}
-                  </span>
-                </div>
-                
-                <div className="flex items-center">
-                  <div className="flex-1 text-sm text-[#8696A0] truncate">
-                    {getMessageStatusIcon(chat) && (
-                      <span className="mr-1">{getMessageStatusIcon(chat)}</span>
-                    )}
-                    {getLastMessagePreview(chat)}
-                  </div>
-                  
-                  {chat.unreadCount > 0 && (
-                    <div className="bg-[#25D366] text-white rounded-full h-5 w-5 flex items-center justify-center text-xs ml-1">
-                      {chat.unreadCount}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          ))
-        )}
+      {/* Chat list with transitions */}
+      <div className="flex-1 overflow-y-auto relative">
+        <TransitionPanel
+          activeIndex={activeView}
+          variants={{
+            enter: { opacity: 0, y: 20 },
+            center: { opacity: 1, y: 0 },
+            exit: { opacity: 0, y: -20 },
+          }}
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className="h-full"
+        >
+          {[
+            // First view: Chat list
+            <div key="chatList" className="h-full">
+              {filteredChats.length > 0 ? <ChatList /> : <EmptyState />}
+            </div>,
+            // Second view: Empty search results
+            <SearchEmptyState key="emptySearch" />
+          ]}
+        </TransitionPanel>
       </div>
       
       {/* New chat dialog */}
@@ -353,7 +442,7 @@ export default function Sidebar({ chats, onSelectChat, onShowProfile, isMobileVi
             <div className="space-y-2">
               <label className="text-sm font-medium">Select {isGroupChat ? 'Members' : 'Contact'}</label>
               <div className="max-h-60 overflow-y-auto border rounded-md p-1">
-                {users?.map(u => (
+                {users.map(u => (
                   <div 
                     key={u.id} 
                     className={`flex items-center p-2 rounded-md cursor-pointer ${
@@ -376,7 +465,7 @@ export default function Sidebar({ chats, onSelectChat, onShowProfile, isMobileVi
                   </div>
                 ))}
                 
-                {(!users || users.length === 0) && (
+                {users.length === 0 && (
                   <div className="p-4 text-center text-[#8696A0]">
                     No users found
                   </div>

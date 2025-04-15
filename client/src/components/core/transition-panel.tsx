@@ -1,41 +1,44 @@
 'use client';
 
-import React, { FC, ReactNode } from 'react';
-import { AnimatePresence, motion, type MotionProps } from 'motion/react';
+import React, { ReactNode } from 'react';
+import { AnimatePresence, motion, MotionProps, Variants } from 'motion/react';
 
 interface TransitionPanelProps {
-  children: ReactNode[];
   activeIndex: number;
+  children: ReactNode[];
   transition?: MotionProps['transition'];
-  variants?: {
-    enter: any;
-    center: any;
-    exit: any;
-  };
+  variants?: Variants;
+  className?: string;
 }
 
-export const TransitionPanel: FC<TransitionPanelProps> = ({
-  children,
+export const TransitionPanel = ({
   activeIndex,
-  transition = { duration: 0.5, ease: 'easeInOut' },
+  children,
+  transition = { duration: 0.3, ease: 'easeInOut' },
   variants = {
     enter: { opacity: 0, x: 20 },
     center: { opacity: 1, x: 0 },
     exit: { opacity: 0, x: -20 },
   },
-}) => {
+  className = '',
+}: TransitionPanelProps) => {
+  const currentChild = children[activeIndex];
+
   return (
-    <AnimatePresence mode="wait" initial={false}>
-      <motion.div
-        key={activeIndex}
-        initial="enter"
-        animate="center"
-        exit="exit"
-        variants={variants}
-        transition={transition}
-      >
-        {children[activeIndex]}
-      </motion.div>
-    </AnimatePresence>
+    <div className={`relative ${className}`}>
+      <AnimatePresence mode="wait" initial={false}>
+        <motion.div
+          key={activeIndex}
+          custom={activeIndex}
+          variants={variants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={transition}
+        >
+          {currentChild}
+        </motion.div>
+      </AnimatePresence>
+    </div>
   );
 };
