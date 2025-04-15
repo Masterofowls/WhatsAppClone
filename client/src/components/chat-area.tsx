@@ -426,46 +426,66 @@ export default function ChatArea({ chat, onBackClick, onContactInfoClick, isMobi
       )}
       
       {/* Message input area */}
-      <div className="bg-[#F0F2F5] p-3 flex items-center gap-2">
-        <div className="relative">
+      <motion.div 
+        className="bg-[#F0F2F5] p-3 flex items-center gap-2"
+        initial={{ y: 20, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.3 }}
+      >
+        <motion.div className="relative">
+          <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="text-[#8696A0] hover:text-[#111B21] rounded-full"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            >
+              <Smile className="h-6 w-6" />
+            </Button>
+          </motion.div>
+          
+          {showEmojiPicker && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 10 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            >
+              <EmojiPicker 
+                onSelect={handleEmojiSelect} 
+                onClose={() => setShowEmojiPicker(false)} 
+              />
+            </motion.div>
+          )}
+        </motion.div>
+        
+        <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
           <Button 
             variant="ghost" 
             size="icon" 
-            className="text-[#8696A0] hover:text-[#111B21]"
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className="text-[#8696A0] hover:text-[#111B21] rounded-full"
+            onClick={() => fileInputRef.current?.click()}
           >
-            <Smile className="h-6 w-6" />
-          </Button>
-          
-          {showEmojiPicker && (
-            <EmojiPicker 
-              onSelect={handleEmojiSelect} 
-              onClose={() => setShowEmojiPicker(false)} 
+            <Paperclip className="h-6 w-6" />
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*"
+              onChange={handleFileSelect}
             />
-          )}
-        </div>
+          </Button>
+        </motion.div>
         
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="text-[#8696A0] hover:text-[#111B21]"
-          onClick={() => fileInputRef.current?.click()}
+        <motion.div 
+          className="flex-1"
+          whileHover={{ scale: 1.01 }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
         >
-          <Paperclip className="h-6 w-6" />
-          <input 
-            type="file" 
-            ref={fileInputRef} 
-            className="hidden" 
-            accept="image/*"
-            onChange={handleFileSelect}
-          />
-        </Button>
-        
-        <div className="flex-1">
           <Input 
             type="text" 
             placeholder="Type a message" 
-            className="w-full rounded-lg py-2.5 px-4 bg-white border-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+            className="w-full rounded-xl py-3 px-4 bg-white border-0 focus-visible:ring-0 focus-visible:ring-offset-0 shadow-sm transition-shadow duration-300 hover:shadow-md"
             value={messageInput}
             onChange={handleInputChange}
             onKeyDown={(e) => {
@@ -475,21 +495,37 @@ export default function ChatArea({ chat, onBackClick, onContactInfoClick, isMobi
               }
             }}
           />
-        </div>
+        </motion.div>
         
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="text-[#8696A0] hover:text-[#111B21]"
-          onClick={handleSendMessage}
+        <motion.div 
+          whileHover={{ scale: 1.1 }} 
+          whileTap={{ scale: 0.9 }}
+          animate={messageInput || selectedFile ? { rotate: [0, 5, -5, 0] } : {}}
+          transition={{
+            duration: 0.5,
+            ease: "easeInOut",
+            times: [0, 0.3, 0.6, 1],
+            repeat: messageInput || selectedFile ? 0 : 0
+          }}
         >
-          {messageInput || selectedFile ? (
-            <Send className="h-6 w-6 text-[#25D366]" />
-          ) : (
-            <Mic className="h-6 w-6" />
-          )}
-        </Button>
-      </div>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className={`${
+              messageInput || selectedFile 
+                ? "bg-[#25D366] text-white hover:bg-[#22c55e]" 
+                : "text-[#8696A0] hover:text-[#111B21]"
+            } rounded-full`}
+            onClick={handleSendMessage}
+          >
+            {messageInput || selectedFile ? (
+              <Send className="h-6 w-6" />
+            ) : (
+              <Mic className="h-6 w-6" />
+            )}
+          </Button>
+        </motion.div>
+      </motion.div>
     </div>
   );
 }
