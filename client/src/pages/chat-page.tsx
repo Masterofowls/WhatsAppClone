@@ -8,6 +8,8 @@ import ChatArea from '@/components/chat-area';
 import ContactInfo from '@/components/contact-info';
 import ProfileModal from '@/components/profile-modal';
 import { Loader2, MessageCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { TextShimmer } from '@/components/core/text-shimmer';
 
 export default function ChatPage() {
   const { user } = useAuth();
@@ -70,8 +72,11 @@ export default function ChatPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-[#F0F2F5]">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-[#F0F2F5] gap-4">
         <Loader2 className="h-12 w-12 animate-spin text-[#25D366]" />
+        <TextShimmer className="font-medium text-[#8696A0]" duration={1.5}>
+          Loading your conversations...
+        </TextShimmer>
       </div>
     );
   }
@@ -98,40 +103,91 @@ export default function ChatPage() {
         
         {/* Main Chat Area */}
         {selectedChat ? (
-          <ChatArea 
-            chat={selectedChat}
-            onBackClick={handleBackToSidebar}
-            onContactInfoClick={toggleContactInfo}
-            isMobileView={isMobileView}
-          />
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="flex-1"
+          >
+            <ChatArea 
+              chat={selectedChat}
+              onBackClick={handleBackToSidebar}
+              onContactInfoClick={toggleContactInfo}
+              isMobileView={isMobileView}
+            />
+          </motion.div>
         ) : (
           !isMobileView && (
             <div className="flex-1 flex items-center justify-center bg-[#F0F2F5]">
-              <div className="text-center p-6">
-                <div className="w-16 h-16 mx-auto bg-[#25D366] rounded-full flex items-center justify-center mb-4">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ 
+                  type: 'spring',
+                  damping: 25, 
+                  stiffness: 300,
+                  delay: 0.2
+                }}
+                className="text-center p-6"
+              >
+                <motion.div 
+                  className="w-16 h-16 mx-auto bg-[#25D366] rounded-full flex items-center justify-center mb-4"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
                   <MessageCircle className="h-8 w-8 text-white" />
-                </div>
-                <h2 className="text-xl font-medium text-[#111B21] mb-2">WhatsApp Web</h2>
-                <p className="text-[#8696A0] max-w-md">
+                </motion.div>
+                <motion.h2 
+                  className="text-xl font-medium text-[#111B21] mb-2"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  WhatsApp Web
+                </motion.h2>
+                <motion.p 
+                  className="text-[#8696A0] max-w-md"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.4 }}
+                >
                   Select a chat from the sidebar to start messaging.
-                </p>
-              </div>
+                </motion.p>
+              </motion.div>
             </div>
           )
         )}
         
         {/* Contact Info Panel */}
-        {showContactInfo && selectedChat && (
-          <ContactInfo 
-            chat={selectedChat} 
-            onClose={() => setShowContactInfo(false)}
-          />
-        )}
+        <AnimatePresence>
+          {showContactInfo && selectedChat && (
+            <motion.div
+              initial={{ x: 300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 300, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
+              <ContactInfo 
+                chat={selectedChat} 
+                onClose={() => setShowContactInfo(false)}
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
         
         {/* Profile Modal */}
-        {showProfileModal && (
-          <ProfileModal onClose={toggleProfileModal} />
-        )}
+        <AnimatePresence>
+          {showProfileModal && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            >
+              <ProfileModal onClose={toggleProfileModal} />
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </WebSocketProvider>
   );

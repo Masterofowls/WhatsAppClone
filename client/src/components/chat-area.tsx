@@ -8,6 +8,9 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import MessageItem from '@/components/message-item';
 import EmojiPicker from '@/components/emoji-picker';
+import { TextShimmer } from '@/components/core/text-shimmer';
+import { TextShimmerWave } from '@/components/core/text-shimmer-wave';
+import { TextScramble } from '@/components/core/text-scramble';
 import { 
   ArrowLeft, 
   Search, 
@@ -268,8 +271,10 @@ export default function ChatArea({ chat, onBackClick, onContactInfoClick, isMobi
           {/* Loading state */}
           {isLoading && (
             <div className="flex justify-center my-4">
-              <div className="bg-white px-3 py-1 rounded-lg text-xs text-[#8696A0]">
-                Loading messages...
+              <div className="bg-white px-4 py-2 rounded-lg text-sm text-[#8696A0]">
+                <TextShimmer className="font-medium" duration={1.5}>
+                  Loading messages...
+                </TextShimmer>
               </div>
             </div>
           )}
@@ -277,8 +282,10 @@ export default function ChatArea({ chat, onBackClick, onContactInfoClick, isMobi
           {/* Empty state */}
           {!isLoading && Object.keys(groupedMessages).length === 0 && (
             <div className="flex justify-center my-4">
-              <div className="bg-white px-3 py-1 rounded-lg text-xs text-[#8696A0]">
-                No messages yet. Start the conversation!
+              <div className="bg-white px-4 py-2 rounded-lg text-sm">
+                <TextScramble className="text-[#25D366] font-medium">
+                  No messages yet. Start the conversation!
+                </TextScramble>
               </div>
             </div>
           )}
@@ -311,11 +318,9 @@ export default function ChatArea({ chat, onBackClick, onContactInfoClick, isMobi
           {typingMemberNames.length > 0 && (
             <div className="flex items-end">
               <div className="max-w-[75%] bg-white rounded-lg p-2 shadow-sm">
-                <div className="flex space-x-1 items-center h-6">
-                  <div className="h-2 w-2 bg-[#8696A0] rounded-full animate-bounce"></div>
-                  <div className="h-2 w-2 bg-[#8696A0] rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
-                  <div className="h-2 w-2 bg-[#8696A0] rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
-                </div>
+                <TextShimmerWave className="font-medium text-sm text-[#25D366]" duration={1}>
+                  {typingMemberNames.join(', ')} {typingMemberNames.length === 1 ? 'is' : 'are'} typing...
+                </TextShimmerWave>
               </div>
             </div>
           )}
