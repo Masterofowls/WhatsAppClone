@@ -7,12 +7,14 @@ import { AuthProvider } from "./hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
 import ChatPage from "@/pages/chat-page";
+import MotionShowcasePage from "@/pages/motion-showcase";
 
 function Router() {
   return (
     <Switch>
       <ProtectedRoute path="/" component={ChatPage} />
       <Route path="/auth" component={AuthPage} />
+      <Route path="/motion-showcase" component={MotionShowcasePage} />
       <Route component={NotFound} />
     </Switch>
   );

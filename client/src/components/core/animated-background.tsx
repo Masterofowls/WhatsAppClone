@@ -25,7 +25,13 @@ export const AnimatedBackground = ({
   ...props
 }: AnimatedBackgroundProps) => {
   const [activeId, setActiveId] = useState<string | null>(defaultValue || null);
-  const [bounds, setBounds] = useState<DOMRect | null>(null);
+  const [bounds, setBounds] = useState<{
+    width: number;
+    height: number;
+    left: number;
+    top: number;
+    parentElement: Element | null;
+  } | null>(null);
 
   // Find the active element and update bounds
   const updateBounds = useCallback(() => {
@@ -35,7 +41,13 @@ export const AnimatedBackground = ({
     if (!activeElement) return null;
     
     const rect = activeElement.getBoundingClientRect();
-    setBounds(rect);
+    setBounds({
+      width: rect.width,
+      height: rect.height,
+      left: rect.left,
+      top: rect.top,
+      parentElement: activeElement.parentElement
+    });
   }, [activeId]);
 
   // Track window resize
@@ -108,8 +120,8 @@ export const AnimatedBackground = ({
           animate={{
             width: bounds.width,
             height: bounds.height,
-            x: bounds.left - (bounds?.parentElement?.getBoundingClientRect().left || 0),
-            y: bounds.top - (bounds?.parentElement?.getBoundingClientRect().top || 0),
+            x: bounds.left - (bounds.parentElement ? bounds.parentElement.getBoundingClientRect().left : 0),
+            y: bounds.top - (bounds.parentElement ? bounds.parentElement.getBoundingClientRect().top : 0),
           }}
           transition={transition}
           layoutId="background"
