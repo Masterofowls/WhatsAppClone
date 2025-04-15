@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
 import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
-import { Redirect } from 'wouter';
+import { useLocation } from 'wouter';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -53,6 +53,7 @@ export default function AuthPage() {
   const supabaseAuth = useSupabaseAuth();
   const [activeTab, setActiveTab] = useState<string>('login');
   const [loading, setLoading] = useState(false);
+  const [location, navigate] = useLocation();
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
@@ -72,10 +73,12 @@ export default function AuthPage() {
     },
   });
 
-  // Redirect if already logged in
-  if (user || supabaseAuth.user) {
-    return <Redirect to="/" />;
-  }
+  // Use useEffect for redirection logic to ensure it runs after auth state is loaded
+  useEffect(() => {
+    if (user || supabaseAuth.user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, supabaseAuth.user, navigate]);
 
   const onLoginSubmit = async (data: LoginFormValues) => {
     setLoading(true);
