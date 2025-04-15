@@ -1,7 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,16 +13,13 @@ interface ProfileModalProps {
 }
 
 export default function ProfileModal({ onClose }: ProfileModalProps) {
-  const { user, updateStatusMutation, updateProfileImageMutation } = useAuth();
-  const { updateProfile } = useSupabaseAuth();
+  const { user, updateStatusMutation, updateDisplayNameMutation, updateProfileImageMutation } = useAuth();
   const { toast } = useToast();
   const [status, setStatus] = useState(user?.status || 'Available');
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState(user?.displayName || '');
   const [isEditingName, setIsEditingName] = useState(false);
-  // In development mode all users are treated as dev users
-  const [isDevMode] = useState(import.meta.env.DEV);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle status update
@@ -33,27 +29,16 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       return;
     }
 
-    if (isDevMode) {
-      // In dev mode, update the simulated user
-      updateProfile({ status: status.trim() })
-        .then(() => {
-          setIsEditingStatus(false);
-          toast({
-            title: 'Status updated',
-            description: 'Your status has been updated in development mode.',
-          });
-        });
-    } else {
-      // Normal update through API
-      updateStatusMutation.mutate(status, {
-        onSuccess: () => {
-          setIsEditingStatus(false);
-        },
-        onError: () => {
-          setStatus(user?.status || 'Available');
-        }
-      });
-    }
+    // Always use the database API
+    updateStatusMutation.mutate(status.trim(), {
+      onSuccess: () => {
+        setIsEditingStatus(false);
+      },
+      onError: () => {
+        setStatus(user?.status || 'Available');
+        setIsEditingStatus(false);
+      }
+    });
   };
 
   // Handle name update
@@ -107,26 +92,20 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     };
     reader.readAsDataURL(file);
 
-    if (isDevMode) {
-      // In dev mode, just update the profile with the data URL
-      reader.onloadend = () => {
-        const base64data = reader.result;
-        updateProfile({ profileImage: base64data })
-          .then(() => {
-            toast({
-              title: 'Profile image updated',
-              description: 'Your profile image has been updated in development mode.',
-            });
-          });
-      };
-    } else {
-      // Normal upload through API
-      updateProfileImageMutation.mutate(file, {
-        onError: () => {
-          setImagePreview(null);
-        }
-      });
-    }
+    // Upload image to server
+    updateProfileImageMutation.mutate(file, {
+      onSuccess: () => {
+        // Preview is already set above
+      },
+      onError: () => {
+        setImagePreview(null);
+        toast({
+          title: 'Upload failed',
+          description: 'Failed to upload profile image. Please try again.',
+          variant: 'destructive'
+        });
+      }
+    });
   };
 
   return (
@@ -134,11 +113,6 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Profile</DialogTitle>
-          {isDevMode && (
-            <DialogDescription className="text-amber-500 font-medium pt-1">
-              Development Mode - Profile changes will be saved locally
-            </DialogDescription>
-          )}
         </DialogHeader>
 
         <div className="space-y-6 py-4">
@@ -203,17 +177,15 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
               <div className="mt-4 flex flex-col items-center">
                 <div className="flex items-center">
                   <h3 className="font-medium text-[#111B21]">{user?.displayName || displayName}</h3>
-                  {isDevMode && (
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="ml-1 text-[#34B7F1] h-auto py-0 px-1"
-                      onClick={() => setIsEditingName(true)}
-                    >
-                      <span className="sr-only">Edit name</span>
-                      <Check size={12} />
-                    </Button>
-                  )}
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="ml-1 text-[#34B7F1] h-auto py-0 px-1"
+                    onClick={() => setIsEditingName(true)}
+                  >
+                    <span className="sr-only">Edit name</span>
+                    <Check size={12} />
+                  </Button>
                 </div>
                 <p className="text-sm text-[#8696A0]">{user?.username}</p>
               </div>
