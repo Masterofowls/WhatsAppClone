@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/use-auth';
+import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
 import { Redirect } from 'wouter';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { insertUserSchema } from '@shared/schema';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -25,16 +25,21 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { MessageCircle, User } from 'lucide-react';
+import { MessageCircle, User, Mail, Lock } from 'lucide-react';
+import { Auth } from '@supabase/auth-ui-react';
+import { ThemeSupa } from '@supabase/auth-ui-shared';
+import { supabase } from '@/lib/supabase';
 
 const loginSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters'),
+  email: z.string().email('Please enter a valid email'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
 });
 
-const registerSchema = insertUserSchema.extend({
+const registerSchema = z.object({
+  email: z.string().email('Please enter a valid email'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string().min(6, 'Password must be at least 6 characters'),
+  displayName: z.string().min(3, 'Display name must be at least 3 characters'),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -44,13 +49,15 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function AuthPage() {
-  const { user, loginMutation, registerMutation } = useAuth();
+  const { user } = useAuth();
+  const supabaseAuth = useSupabaseAuth();
   const [activeTab, setActiveTab] = useState<string>('login');
+  const [loading, setLoading] = useState(false);
 
   const loginForm = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      username: '',
+      email: '',
       password: '',
     },
   });
@@ -58,7 +65,7 @@ export default function AuthPage() {
   const registerForm = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
-      username: '',
+      email: '',
       displayName: '',
       password: '',
       confirmPassword: '',
@@ -66,17 +73,38 @@ export default function AuthPage() {
   });
 
   // Redirect if already logged in
-  if (user) {
+  if (user || supabaseAuth.user) {
     return <Redirect to="/" />;
   }
 
-  const onLoginSubmit = (data: LoginFormValues) => {
-    loginMutation.mutate(data);
+  const onLoginSubmit = async (data: LoginFormValues) => {
+    setLoading(true);
+    try {
+      const result = await supabaseAuth.signIn(data.email, data.password);
+      if (result.error) {
+        throw result.error;
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const onRegisterSubmit = (data: RegisterFormValues) => {
-    const { confirmPassword, ...userData } = data;
-    registerMutation.mutate(userData);
+  const onRegisterSubmit = async (data: RegisterFormValues) => {
+    setLoading(true);
+    try {
+      const result = await supabaseAuth.signUp(data.email, data.password, {
+        displayName: data.displayName
+      });
+      if (result.error) {
+        throw result.error;
+      }
+    } catch (error) {
+      console.error("Registration error:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -138,12 +166,19 @@ export default function AuthPage() {
                     <form onSubmit={loginForm.handleSubmit(onLoginSubmit)} className="space-y-4">
                       <FormField
                         control={loginForm.control}
-                        name="username"
+                        name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>Email</FormLabel>
                             <FormControl>
-                              <Input placeholder="Enter your username" {...field} />
+                              <div className="flex items-center border rounded-md focus-within:ring-1 focus-within:ring-[#25D366] px-3">
+                                <Mail className="h-4 w-4 text-gray-400 mr-2" />
+                                <Input 
+                                  className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0" 
+                                  placeholder="your.email@example.com" 
+                                  {...field} 
+                                />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -157,7 +192,15 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Password</FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="Enter your password" {...field} />
+                              <div className="flex items-center border rounded-md focus-within:ring-1 focus-within:ring-[#25D366] px-3">
+                                <Lock className="h-4 w-4 text-gray-400 mr-2" />
+                                <Input 
+                                  className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0" 
+                                  type="password" 
+                                  placeholder="Enter your password" 
+                                  {...field} 
+                                />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -167,9 +210,9 @@ export default function AuthPage() {
                       <Button 
                         type="submit" 
                         className="w-full bg-[#25D366] hover:bg-opacity-90"
-                        disabled={loginMutation.isPending}
+                        disabled={loading}
                       >
-                        {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
+                        {loading ? 'Signing in...' : 'Sign In'}
                       </Button>
                     </form>
                   </Form>
@@ -180,12 +223,19 @@ export default function AuthPage() {
                     <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
                       <FormField
                         control={registerForm.control}
-                        name="username"
+                        name="email"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Username</FormLabel>
+                            <FormLabel>Email</FormLabel>
                             <FormControl>
-                              <Input placeholder="Choose a username" {...field} />
+                              <div className="flex items-center border rounded-md focus-within:ring-1 focus-within:ring-[#25D366] px-3">
+                                <Mail className="h-4 w-4 text-gray-400 mr-2" />
+                                <Input 
+                                  className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0" 
+                                  placeholder="your.email@example.com" 
+                                  {...field} 
+                                />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -199,7 +249,14 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Display Name</FormLabel>
                             <FormControl>
-                              <Input placeholder="Your name as shown to others" {...field} />
+                              <div className="flex items-center border rounded-md focus-within:ring-1 focus-within:ring-[#25D366] px-3">
+                                <User className="h-4 w-4 text-gray-400 mr-2" />
+                                <Input 
+                                  className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0" 
+                                  placeholder="Your name as shown to others" 
+                                  {...field} 
+                                />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -213,7 +270,15 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Password</FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="Create a password" {...field} />
+                              <div className="flex items-center border rounded-md focus-within:ring-1 focus-within:ring-[#25D366] px-3">
+                                <Lock className="h-4 w-4 text-gray-400 mr-2" />
+                                <Input 
+                                  className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0" 
+                                  type="password" 
+                                  placeholder="Create a password" 
+                                  {...field} 
+                                />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -227,7 +292,15 @@ export default function AuthPage() {
                           <FormItem>
                             <FormLabel>Confirm Password</FormLabel>
                             <FormControl>
-                              <Input type="password" placeholder="Confirm your password" {...field} />
+                              <div className="flex items-center border rounded-md focus-within:ring-1 focus-within:ring-[#25D366] px-3">
+                                <Lock className="h-4 w-4 text-gray-400 mr-2" />
+                                <Input 
+                                  className="border-0 focus-visible:ring-0 focus-visible:ring-offset-0" 
+                                  type="password" 
+                                  placeholder="Confirm your password" 
+                                  {...field} 
+                                />
+                              </div>
                             </FormControl>
                             <FormMessage />
                           </FormItem>
@@ -237,9 +310,9 @@ export default function AuthPage() {
                       <Button 
                         type="submit" 
                         className="w-full bg-[#25D366] hover:bg-opacity-90"
-                        disabled={registerMutation.isPending}
+                        disabled={loading}
                       >
-                        {registerMutation.isPending ? 'Creating account...' : 'Create Account'}
+                        {loading ? 'Creating account...' : 'Create Account'}
                       </Button>
                     </form>
                   </Form>

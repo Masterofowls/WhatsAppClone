@@ -1,6 +1,6 @@
 'use client';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@shared/supabase';
+import { supabase } from '@/lib/supabase';
 import { useToast } from './use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { Session, User, AuthError } from '@supabase/supabase-js';

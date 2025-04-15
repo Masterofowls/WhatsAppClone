@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
+import { useSupabaseAuth } from "@/hooks/use-supabase-auth";
 import { Loader2 } from "lucide-react";
 import { Redirect, Route } from "wouter";
 
@@ -9,7 +10,11 @@ export function ProtectedRoute({
   path: string;
   component: () => React.JSX.Element;
 }) {
-  const { user, isLoading } = useAuth();
+  const { user, isLoading: isAuthLoading } = useAuth();
+  const { user: supabaseUser, isLoading: isSupabaseLoading } = useSupabaseAuth();
+  
+  const isLoading = isAuthLoading || isSupabaseLoading;
+  const isAuthenticated = user || supabaseUser;
 
   if (isLoading) {
     return (
@@ -21,7 +26,7 @@ export function ProtectedRoute({
     );
   }
 
-  if (!user) {
+  if (!isAuthenticated) {
     return (
       <Route path={path}>
         <Redirect to="/auth" />
