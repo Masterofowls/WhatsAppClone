@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/hooks/use-auth';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useSupabaseAuth } from '@/hooks/use-supabase-auth';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,10 +15,15 @@ interface ProfileModalProps {
 
 export default function ProfileModal({ onClose }: ProfileModalProps) {
   const { user, updateStatusMutation, updateProfileImageMutation } = useAuth();
+  const { updateProfile } = useSupabaseAuth();
   const { toast } = useToast();
   const [status, setStatus] = useState(user?.status || 'Available');
   const [isEditingStatus, setIsEditingStatus] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState(user?.displayName || '');
+  const [isEditingName, setIsEditingName] = useState(false);
+  // In development mode all users are treated as dev users
+  const [isDevMode] = useState(import.meta.env.DEV);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle status update
@@ -27,14 +33,47 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       return;
     }
 
-    updateStatusMutation.mutate(status, {
-      onSuccess: () => {
-        setIsEditingStatus(false);
-      },
-      onError: () => {
-        setStatus(user?.status || 'Available');
-      }
-    });
+    if (isDevMode) {
+      // In dev mode, update the simulated user
+      updateProfile({ status: status.trim() })
+        .then(() => {
+          setIsEditingStatus(false);
+          toast({
+            title: 'Status updated',
+            description: 'Your status has been updated in development mode.',
+          });
+        });
+    } else {
+      // Normal update through API
+      updateStatusMutation.mutate(status, {
+        onSuccess: () => {
+          setIsEditingStatus(false);
+        },
+        onError: () => {
+          setStatus(user?.status || 'Available');
+        }
+      });
+    }
+  };
+
+  // Handle name update
+  const handleNameUpdate = () => {
+    if (displayName.trim() === '') {
+      setDisplayName(user?.displayName || '');
+      return;
+    }
+
+    if (isDevMode) {
+      // In dev mode, update the simulated user
+      updateProfile({ name: displayName.trim() })
+        .then(() => {
+          setIsEditingName(false);
+          toast({
+            title: 'Name updated',
+            description: 'Your name has been updated in development mode.',
+          });
+        });
+    }
   };
 
   // Handle profile image selection
@@ -69,12 +108,26 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
     };
     reader.readAsDataURL(file);
 
-    // Upload image
-    updateProfileImageMutation.mutate(file, {
-      onError: () => {
-        setImagePreview(null);
-      }
-    });
+    if (isDevMode) {
+      // In dev mode, just update the profile with the data URL
+      reader.onloadend = () => {
+        const base64data = reader.result;
+        updateProfile({ profileImage: base64data })
+          .then(() => {
+            toast({
+              title: 'Profile image updated',
+              description: 'Your profile image has been updated in development mode.',
+            });
+          });
+      };
+    } else {
+      // Normal upload through API
+      updateProfileImageMutation.mutate(file, {
+        onError: () => {
+          setImagePreview(null);
+        }
+      });
+    }
   };
 
   return (
@@ -94,8 +147,8 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
                 ) : user?.profileImage ? (
                   <AvatarImage src={user.profileImage} alt={user.displayName} />
                 ) : (
-                  <AvatarFallback className="text-2xl">
-                    {user?.displayName.substring(0, 2) || 'U'}
+                  <AvatarFallback className="text-2xl bg-[#25D366] text-white">
+                    {user?.displayName?.substring(0, 2) || user?.username?.substring(0, 2) || 'U'}
                   </AvatarFallback>
                 )}
 
@@ -115,8 +168,52 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
               </Avatar>
             </div>
 
-            <h3 className="mt-4 font-medium text-[#111B21]">{user?.displayName}</h3>
-            <p className="text-sm text-[#8696A0]">{user?.username}</p>
+            {isEditingName ? (
+              <div className="mt-4 flex items-center gap-2">
+                <Input 
+                  value={displayName} 
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  className="flex-1 text-center"
+                  placeholder="Your name"
+                  maxLength={30}
+                />
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={handleNameUpdate}
+                >
+                  <Check className="h-5 w-5 text-[#25D366]" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => {
+                    setDisplayName(user?.displayName || '');
+                    setIsEditingName(false);
+                  }}
+                >
+                  <X className="h-5 w-5 text-[#8696A0]" />
+                </Button>
+              </div>
+            ) : (
+              <div className="mt-4 flex flex-col items-center">
+                <div className="flex items-center">
+                  <h3 className="font-medium text-[#111B21]">{user?.displayName || displayName}</h3>
+                  {isDevMode && (
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="ml-1 text-[#34B7F1] h-auto py-0 px-1"
+                      onClick={() => setIsEditingName(true)}
+                    >
+                      <span className="sr-only">Edit name</span>
+                      <Check size={12} />
+                    </Button>
+                  )}
+                </div>
+                <p className="text-sm text-[#8696A0]">{user?.username}</p>
+              </div>
+            )}
           </div>
 
           {/* Status */}

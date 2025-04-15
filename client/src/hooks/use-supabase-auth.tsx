@@ -252,6 +252,27 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
   };
 
   const updateProfile = async (data: Record<string, any>) => {
+    // If we're using a simulated dev user, just update local state
+    if (user && user.id === 'dev-user-id' && import.meta.env.DEV) {
+      // Apply updates to simulated user
+      setUser(prevUser => ({
+        ...prevUser,
+        user_metadata: {
+          ...prevUser?.user_metadata,
+          ...data
+        }
+      } as any));
+      
+      toast({
+        title: 'Profile updated',
+        description: 'Your profile has been updated in development mode.',
+        variant: 'default',
+      });
+      
+      return { error: null };
+    }
+    
+    // Normal flow for real users
     const { error } = await supabase.auth.updateUser({
       data
     });
