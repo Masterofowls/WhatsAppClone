@@ -195,7 +195,7 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
             console.log('Dev auth: Still cannot sign in after confirmation, using simulation');
             
             // Try to load saved profile data from localStorage
-            let savedProfile = {};
+            let savedProfile: Record<string, any> = {};
             try {
               const savedData = localStorage.getItem('dev_user_profile');
               if (savedData) {
@@ -210,9 +210,9 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
               id: 'dev-user-id',
               email: email,
               user_metadata: { 
-                name: savedProfile?.name || email.split('@')[0],
-                status: savedProfile?.status || 'Available',
-                profileImage: savedProfile?.profileImage || null,
+                name: (savedProfile.name as string) || email.split('@')[0],
+                status: (savedProfile.status as string) || 'Available',
+                profileImage: (savedProfile.profileImage as string) || null,
                 ...savedProfile
               },
               created_at: new Date().toISOString(),

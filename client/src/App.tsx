@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { ProtectedRoute } from "./lib/protected-route";
 import { AuthProvider } from "./hooks/use-auth";
 import { SupabaseAuthProvider } from "./hooks/use-supabase-auth";
+import { SupabaseAuthAdapter } from "./hooks/use-supabase-auth-adapter";
 import { DevTools } from "@/components/dev-tools";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
@@ -26,11 +27,13 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <SupabaseAuthProvider>
-        <AuthProvider>
-          <Router />
-          <Toaster />
-          <DevTools />
-        </AuthProvider>
+        <SupabaseAuthAdapter>
+          <AuthProvider>
+            <Router />
+            <Toaster />
+            <DevTools />
+          </AuthProvider>
+        </SupabaseAuthAdapter>
       </SupabaseAuthProvider>
     </QueryClientProvider>
   );
