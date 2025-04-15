@@ -6,8 +6,10 @@ import { storage } from "./storage";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
-import { insertChatSchema, insertMessageSchema, insertChatMemberSchema } from "@shared/schema";
+import { insertChatSchema, insertMessageSchema, insertChatMemberSchema, users } from "@shared/schema";
 import { adminConfirmUser, getUserByEmail, devConfirmUser } from "./supabase-admin";
+import { eq } from "drizzle-orm";
+import { db } from "./db";
 
 // Configure multer for file uploads
 const uploadsDir = path.join(process.cwd(), "uploads");
@@ -92,6 +94,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const profileImageUrl = `/uploads/${req.file.filename}`;
     const updatedUser = await storage.updateUserProfileImage(req.user.id, profileImageUrl);
     res.json(updatedUser);
+  });
+  
+  // Add a route to update user display name
+  app.post("/api/users/display-name", async (req, res) => {
+    if (!req.isAuthenticated()) return res.status(401).send("Unauthorized");
+    const { displayName } = req.body;
+    if (!displayName) return res.status(400).send("Display name is required");
+    
+    try {
+      // Use the existing user ID to update the display name
+      const [updatedUser] = await db.update(users)
+        .set({ displayName })
+        .where(eq(users.id, req.user.id))
+        .returning();
+        
+      if (!updatedUser) {
+        return res.status(404).send("User not found");
+      }
+      
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating display name:", error);
+      res.status(500).send("Failed to update display name");
+    }
   });
 
   // Chats endpoints

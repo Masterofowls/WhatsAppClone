@@ -63,17 +63,16 @@ export default function ProfileModal({ onClose }: ProfileModalProps) {
       return;
     }
 
-    if (isDevMode) {
-      // In dev mode, update the simulated user
-      updateProfile({ name: displayName.trim() })
-        .then(() => {
-          setIsEditingName(false);
-          toast({
-            title: 'Name updated',
-            description: 'Your name has been updated in development mode.',
-          });
-        });
-    }
+    // Use the database API to update the name
+    updateDisplayNameMutation.mutate(displayName.trim(), {
+      onSuccess: () => {
+        setIsEditingName(false);
+      },
+      onError: () => {
+        setDisplayName(user?.displayName || '');
+        setIsEditingName(false);
+      }
+    });
   };
 
   // Handle profile image selection

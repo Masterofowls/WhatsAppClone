@@ -16,6 +16,7 @@ type AuthContextType = {
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<SelectUser, Error, RegisterData>;
   updateStatusMutation: UseMutationResult<SelectUser, Error, string>;
+  updateDisplayNameMutation: UseMutationResult<SelectUser, Error, string>;
   updateProfileImageMutation: UseMutationResult<SelectUser, Error, File>;
 };
 
@@ -117,6 +118,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
     },
   });
+  
+  const updateDisplayNameMutation = useMutation({
+    mutationFn: async (displayName: string) => {
+      const res = await apiRequest("POST", "/api/users/display-name", { displayName });
+      return await res.json();
+    },
+    onSuccess: (updatedUser: SelectUser) => {
+      queryClient.setQueryData(["/api/user"], updatedUser);
+      toast({
+        title: "Display name updated",
+        description: "Your display name has been updated successfully",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update display name",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const updateProfileImageMutation = useMutation({
     mutationFn: async (file: File) => {
@@ -162,6 +184,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         logoutMutation,
         registerMutation,
         updateStatusMutation,
+        updateDisplayNameMutation,
         updateProfileImageMutation,
       }}
     >
